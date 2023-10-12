@@ -13,8 +13,15 @@ const sg      = await seagulls.init(),
    stateB   = new Float32Array(size),
    stateColor = new Float32Array(size * 3)
 
+let scrollAxes = [0, 0];
 
+function causeFlow(ev) {
+   scrollAxes[0] = ev.deltaX;
+   scrollAxes[1] = ev.deltaY;
+   sg.uniforms.scroll = scrollAxes;
+}
 
+canvas.onwheel = causeFlow;
 
 for( let i = 0; i < size; i++ ) {
    stateA[i] = Math.round(Math.random() < 0.3? 1:0);
@@ -68,8 +75,8 @@ pane.addBinding(tpParams, 'da', {min: 0, max: 1 }).on('change',  e => {sg.unifor
 pane.addBinding(tpParams, 'db', {min: 0, max: 1 }).on('change',  e => {sg.uniforms.Db = e.value;});
 pane.addBinding(tpParams, 'feed', {min: 0, max: 0.5 }).on('change',  e => {sg.uniforms.f = e.value;});
 pane.addBinding(tpParams, 'kill', {min: 0, max: 0.5 }).on('change',  e => {sg.uniforms.k = e.value;});
-pane.addBinding(tpParams, 'brushA', {min: 0, max: 1 }).on('change',  e => {sg.uniforms.brushA = e.value;});
-pane.addBinding(tpParams, 'brushANoise', {min: 0, max: 5 }).on('change',  e => {sg.uniforms.brushANoise = e.value;});
+pane.addBinding(tpParams, 'brushA', {min: 0, max: 1 }).on('change',  e => {sg.uniforms.brushA = [e.value, sg.uniforms.brushA[1]];});
+pane.addBinding(tpParams, 'brushANoise', {min: 0, max: 5 }).on('change',  e => {sg.uniforms.brushA = [sg.uniforms.brushA[0], e.value];});
 pane.addBinding(tpParams, 'brushSize', {min: 5, max: 200 }).on('change',  e => {sg.uniforms.brushSize = e.value;});
 pane.addBinding(tpParams, 'tesselate').on('change',  e => {sg.uniforms.tesselate = e.value;});
 pane.addBinding(tpParams, 'reverseTesselation').on('change',  e => {sg.uniforms.reverseTesselation = e.value;});
@@ -84,11 +91,11 @@ sg.buffers({ stAin:stateA, stAout:stateA, stBin:stateB, stBout:stateB, stColin:s
       k: tpParams.kill,
       mseState: mseState,
       funColor: funColor,
-      brushA: tpParams.brushA,
-      brushANoise: tpParams.brushANoise,
+      brushA: [tpParams.brushA, tpParams.brushANoise],
       brushSize: tpParams.brushSize,
       tesselate: tpParams.tesselate? 1:0,
-      reverseTesselation: tpParams.reverseTesselation? 1:0
+      reverseTesselation: tpParams.reverseTesselation? 1:0,
+      scroll: scrollAxes
    })
    .backbuffer(false)
    .pingpong(1)

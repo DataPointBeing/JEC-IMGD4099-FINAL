@@ -1,4 +1,7 @@
 @group(0) @binding(0) var<uniform> res:   vec2f;
+
+@group(0) @binding(11) var<uniform> scroll: vec2f;
+
 @group(0) @binding(15) var<storage> stBin: array<f32>;
 @group(0) @binding(17) var<storage> stColin: array<f32>;
 
@@ -12,7 +15,7 @@ fn fs( @builtin(position) pos : vec4f ) -> @location(0) vec4f {
   var funRGB : vec3f = vec3f(stColin[idx*3], stColin[(idx*3)+1], stColin[(idx*3)+2]);
 
   var bg : vec3f = vec3(0.114, 0.306, 0.569);
-  if (pos.x % 50 > 48 || pos.y % 50 > 48) {
+  if ((pos.x + scroll.x) % 50 > 48 || (pos.y + scroll.y) % 50 > 48) {
     bg = vec3(0.09, 0.210, 0.440);
   }
 

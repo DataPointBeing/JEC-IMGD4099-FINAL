@@ -5,11 +5,12 @@
 @group(0) @binding(4) var<uniform> k: f32;
 @group(0) @binding(5) var<uniform> mseState: vec3f;
 @group(0) @binding(6) var<uniform> funColor: vec3f;
-@group(0) @binding(7) var<uniform> brushA: f32;
-@group(0) @binding(8) var<uniform> brushAnoise: f32;
-@group(0) @binding(9) var<uniform> brushSize: f32;
-@group(0) @binding(10) var<uniform> tesselate: u32;
-@group(0) @binding(11) var<uniform> reverseTesselation: u32;
+@group(0) @binding(7) var<uniform> brushA: vec2f;
+@group(0) @binding(8) var<uniform> brushSize: f32;
+@group(0) @binding(9) var<uniform> tesselate: u32;
+@group(0) @binding(10) var<uniform> reverseTesselation: u32;
+
+@group(0) @binding(11) var<uniform> scroll: vec2f;
 
 @group(0) @binding(12) var<storage, read_write> stAin: array<f32>;
 @group(0) @binding(13) var<storage, read_write> stAout: array<f32>;
@@ -28,16 +29,16 @@ fn laplaceA(x:i32, y:i32) -> f32 {
   var total = stAin[index(x, y)] * -1.0;
 
   // Adjacent
-  total += stAin[index(x + 1, y)] * 0.2;
-  total += stAin[index(x - 1, y)] * 0.2;
-  total += stAin[index(x, y + 1)] * 0.2;
-  total += stAin[index(x, y - 1)] * 0.2;
+  total += stAin[index(x + 1, y)] * (0.2 + (scroll.x / 200));
+  total += stAin[index(x - 1, y)] * (0.2 + (-scroll.x / 200));
+  total += stAin[index(x, y + 1)] * (0.2 + (scroll.y / 200));
+  total += stAin[index(x, y - 1)] * (0.2 + (-scroll.y / 200));
 
   // Diagonal
-  total += stAin[index(x + 1, y + 1)] * 0.05;
-  total += stAin[index(x - 1, y - 1)] * 0.05;
-  total += stAin[index(x + 1, y - 1)] * 0.05;
-  total += stAin[index(x - 1, y + 1)] * 0.05;
+  total += stAin[index(x + 1, y + 1)] * (0.05 + ((scroll.x + scroll.y) / 800));
+  total += stAin[index(x - 1, y - 1)] * (0.05 + ((-scroll.x - scroll.y) / 800));
+  total += stAin[index(x + 1, y - 1)] * (0.05 + ((scroll.x - scroll.y) / 800));
+  total += stAin[index(x - 1, y + 1)] * (0.05 + ((-scroll.x + scroll.y) / 800));
 
   return total;
 }
@@ -46,16 +47,16 @@ fn laplaceB(x:i32, y:i32) -> f32 {
   var total = stBin[index(x, y)] * -1.0;
 
   // Adjacent
-  total += stBin[index(x + 1, y)] * 0.2;
-  total += stBin[index(x - 1, y)] * 0.2;
-  total += stBin[index(x, y + 1)] * 0.2;
-  total += stBin[index(x, y - 1)] * 0.2;
+  total += stBin[index(x + 1, y)] * (0.2 + (scroll.x / 200));
+  total += stBin[index(x - 1, y)] * (0.2 + (-scroll.x / 200));
+  total += stBin[index(x, y + 1)] * (0.2 + (scroll.y / 200));
+  total += stBin[index(x, y - 1)] * (0.2 + (-scroll.y / 200));
 
   // Diagonal
-  total += stBin[index(x + 1, y + 1)] * 0.05;
-  total += stBin[index(x - 1, y - 1)] * 0.05;
-  total += stBin[index(x + 1, y - 1)] * 0.05;
-  total += stBin[index(x - 1, y + 1)] * 0.05;
+  total += stBin[index(x + 1, y + 1)] * (0.05 + ((scroll.x + scroll.y) / 800));
+  total += stBin[index(x - 1, y - 1)] * (0.05 + ((-scroll.x - scroll.y) / 800));
+  total += stBin[index(x + 1, y - 1)] * (0.05 + ((scroll.x - scroll.y) / 800));
+  total += stBin[index(x - 1, y + 1)] * (0.05 + ((-scroll.x + scroll.y) / 800));
 
   return total;
 }
@@ -166,7 +167,7 @@ fn cs( @builtin(global_invocation_id) _cell:vec3u ) {
     let c = voronoi(p * 12.);
     let cM = vec2f(p.x + (c.y/12.), p.y + (c.z/12.));
 
-    stAout[i] = saturate((noise.x * brushAnoise) + brushA);
+    stAout[i] = saturate((noise.x * brushA.y) + brushA.x);
 
     if(reverseTesselation > 0) {
       stBout[i] = step(c.x, 0.2) * (1. - min(c.y, c.z));
@@ -187,7 +188,7 @@ fn cs( @builtin(global_invocation_id) _cell:vec3u ) {
   if(mseState.z == 1.0 && distance(vec2(f32(x), f32(y)), mseState.xy) < brushSize){
     let p : vec2f = vec2f(f32(x), f32(y));
     let noise = fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
-    stAout[i] = saturate((noise.x * brushAnoise) + brushA);
+    stAout[i] = saturate((noise.x * brushA.y) + brushA.x);
     stBout[i] = 1.;
     stColout[i*3] = funColor.x;
     stColout[(i*3)+1] = funColor.y;
